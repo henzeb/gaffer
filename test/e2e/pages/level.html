@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Level</title>
+<script src="lib/track.js"></script>
+<style>body { margin: 0; background: #222; } #player { position: relative; width: 640px; margin: 40px; } video { width: 640px; height: 360px; display: block; background: #000; }</style>
+</head>
+<body>
+<div id="player" class="html5-video-player"><video id="vid" autoplay loop preload="auto"></video></div>
+<script>
+  const q = new URLSearchParams(location.search);
+  const v = document.getElementById("vid");
+  // &tainted: the same file from another domain, without permission.
+  const base = q.has("tainted") ? "http://localhost:" + location.port : "";
+  window.__play = (name) => { v.src = base + "/fixtures/media/" + name + ".mp4"; return v.play(); };
+  if (q.has("volume")) v.volume = +q.get("volume");
+  // &yt=<LUFS>: a YouTube player that knows the loudness.
+  if (q.has("yt")) {
+    const p = document.getElementById("player");
+    p.getPlayerState = () => 1;
+    p.getVideoData = () => ({ video_id: "a" });
+    // &cont=, &drc=: the loudness of what plays, in the stats and per format.
+    p.getPlayerResponse = () => ({ videoDetails: { videoId: window.__other || "a" }, playerConfig: { audioConfig: { trackAbsoluteLoudnessLkfs: +q.get("yt") } }, streamingData: { adaptiveFormats: [{ itag: 251, trackAbsoluteLoudnessLkfs: +q.get("yt") }, { itag: 251, isDrc: true, trackAbsoluteLoudnessLkfs: +q.get("drc") }] } });
+    if (q.has("cont")) p.getStatsForNerds = () => ({ volume: "100%/100% DRC (cont." + q.get("cont") + "dB tgt.-14.0dB)", codecs: "av01 (397) / opus (251)" });
+    if (q.has("drc")) p.getStatsForNerds = () => ({ volume: "100%/100% DRC", codecs: "av01 (397) / opus (251)" });
+  }
+  window.__play(q.get("src") || "loud");
+</script>
+</body>
+</html>

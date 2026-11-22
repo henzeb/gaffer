@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Kwaliteitsmenu in een portal</title>
+<script src="lib/track.js"></script>
+<style>
+  body { margin: 0; background: #222; color: #ddd; font: 14px system-ui, sans-serif; }
+  .player { position: relative; width: 640px; height: 360px; margin: 40px; }
+  video { width: 640px; height: 360px; display: block; background: #000; }
+  .controls { position: absolute; right: 8px; bottom: 8px; display: flex; gap: 6px; }
+  .tooltip { position: fixed; background: #333; border: 1px solid #555; border-radius: 8px; padding: 6px; display: flex; flex-direction: column; gap: 4px; }
+  .tooltip .item { padding: 4px 10px; cursor: pointer; }
+  .tooltip .item.active { color: #fbbf24; }
+</style>
+</head>
+<body>
+<div class="player" id="player">
+  <video id="vid" src="/fixtures/media/v360.mp4" autoplay muted loop preload="auto"></video>
+  <div class="controls"><button id="qbtn">⚙</button></div>
+</div>
+<script>
+  const q = new URLSearchParams(location.search);
+  const delay = +(q.get("delay") || 0);
+  const needPointer = q.has("pointer");
+  const textOnly = q.get("list") === "text";
+  const v = document.getElementById("vid");
+  const btn = document.getElementById("qbtn");
+  btn.setAttribute(q.get("attr") || "title", "Quality");
+  const levels = [["1080p", 1080], ["720p", 720], ["360p", 360]];
+  let current = "360p", auto = false, menu = null, lastMove = 0;
+  window.__portal = { opens: 0, clicks: 0, ignored: 0, picks: [], visible: [] };
+
+  document.getElementById("player").addEventListener("pointermove", () => { lastMove = performance.now(); });
+  btn.addEventListener("pointermove", () => { lastMove = performance.now(); });
+
+  function render() {
+    const m = document.createElement("div");
+    m.className = "tooltip";
+    const r = btn.getBoundingClientRect();
+    m.style.left = r.left - 80 + "px";
+    m.style.top = r.top - 150 + "px";
+    const a = document.createElement("label");
+    a.className = "item auto";
+    a.innerHTML = "<span>Auto</span> <input type=checkbox>";
+    a.querySelector("input").checked = auto;
+    a.addEventListener("click", (e) => { e.preventDefault(); auto = !auto; close(); });
+    m.appendChild(a);
+    for (const [label, h] of levels) {
+      const it = document.createElement("div");
+      it.className = "item" + (label === current && !auto ? " active" : "");
+      if (!textOnly) it.setAttribute("data-resolution", label);
+      it.textContent = label;
+      it.addEventListener("click", () => pick(label, h));
+      m.appendChild(it);
+    }
+    return m;
+  }
+  function open() {
+    menu = render();
+    document.body.appendChild(menu);
+    window.__portal.opens++;
+    const m = menu;
+    requestAnimationFrame(() => window.__portal.visible.push(m.isConnected ? getComputedStyle(m).visibility : "hidden"));
+  }
+  function close() { if (menu) { menu.remove(); menu = null; } }
+  function pick(label, h) {
+    window.__portal.picks.push(label);
+    current = label; auto = false;
+    const t = v.currentTime;
+    v.src = q.has("bad") && h === 1080 ? "/fixtures/media/audio-only.mp4" : "/fixtures/media/v" + h + ".mp4";
+    v.addEventListener("loadedmetadata", () => { v.currentTime = t; v.play().catch(() => {}); }, { once: true });
+    close();
+  }
+  btn.addEventListener("click", () => {
+    window.__portal.clicks++;
+    if (menu) { close(); return; }
+    if (needPointer && performance.now() - lastMove > 500) { window.__portal.ignored++; return; }
+    if (delay) setTimeout(open, delay); else open();
+  });
+  window.openMenu = open;
+  window.menuOpen = () => !!menu;
+</script>
+</body>
+</html>

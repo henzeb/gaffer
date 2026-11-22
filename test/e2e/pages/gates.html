@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Thresholds over a video</title>
+<script src="lib/track.js"></script>
+<style>
+  body { margin: 0; background: #222; color: #ddd; font: 14px system-ui, sans-serif; }
+  .box { position: relative; width: 640px; height: 360px; margin: 40px; }
+  video { width: 640px; height: 360px; display: block; background: #000; }
+  .center { position: absolute; left: 120px; top: 80px; width: 400px; height: 200px; background: #333; }
+  .bottom { position: absolute; left: 0; right: 0; bottom: 0; height: 48px; background: #333; }
+</style>
+</head>
+<body>
+<div class="box" id="box"><video id="vid" src="/fixtures/media/v360.mp4" autoplay muted loop preload="auto"></video></div>
+<script>
+  // Thresholds of a site, without a dialog role, that must stay; and layers of a
+  // player with the same words that must go.
+  const KINDS = {
+    age: ['center', '<p>This video is for adults. Are you 18+?</p><button>Yes</button><button>No</button>'],
+    consent: ['center', '<p>We need your consent for cookies to play this video.</p><button>Accept</button>'],
+    paywall: ['center', '<p>Subscribe or log in to keep watching.</p><a href="#sub">Subscribe</a><a href="#login">Log in</a>'],
+    unmute: ['center', '<button>Tap to unmute</button>'],
+    bar: ['bottom', '<button>Play</button><button>Sign in</button>'],
+    controls: ['center', '<p>Subscribe</p><button>1</button><button>2</button><button>3</button><button>4</button>'],
+    slider: ['center', '<p>Sign in to like</p><button>Like</button><div role="slider" aria-valuenow="1"></div>'],
+  };
+  const [cls, html] = KINDS[new URLSearchParams(location.search).get("kind")];
+  const layer = document.createElement("div");
+  layer.id = "layer";
+  layer.className = cls;
+  layer.innerHTML = html;
+  document.getElementById("box").appendChild(layer);
+  window.__clicks = 0;
+  layer.querySelector("button,a").addEventListener("click", (e) => { e.preventDefault(); window.__clicks++; });
+</script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+
+      - name: Cache Chrome for Testing
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/gaffer/chrome-for-testing
+          key: chrome-for-testing-${{ github.run_id }}
+          restore-keys: chrome-for-testing-
+
+      - name: Cache test media
+        uses: actions/cache@v6
+        with:
+          path: test/fixtures/media
+          key: test-media-${{ hashFiles('test/fixtures/make.sh') }}
+
+      - run: npm ci
+
+      - name: Install Chrome for Testing
+        run: npm run chrome
+
+      - run: npm test

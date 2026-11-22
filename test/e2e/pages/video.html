@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Gewone video</title>
+<script src="lib/track.js"></script>
+<style>
+  body { margin: 0; font: 14px system-ui, sans-serif; background: #222; color: #ddd; height: 2000px; }
+  .player { position: relative; width: 640px; height: 360px; margin: 40px; }
+  video { width: 640px; height: 360px; background: #000; display: block; }
+  .site-controls { position: absolute; left: 0; right: 0; bottom: 0; height: 40px; background: rgba(0, 0, 0, .5); display: flex; align-items: center; gap: 8px; padding: 0 8px; }
+  .dialog { position: absolute; left: 160px; top: 80px; width: 320px; height: 120px; background: #444; display: none; }
+</style>
+</head>
+<body>
+<div class="player" id="player">
+  <video id="vid" src="/fixtures/media/v360.mp4" autoplay muted loop playsinline controls preload="auto"></video>
+  <div class="site-controls" id="site-controls" style="opacity: 0.9"><button id="site-play">Afspelen</button><span>0:00</span></div>
+  <div class="dialog" role="dialog" id="dialog"><button id="dialog-btn" style="margin: 40px 100px">Dialoogknop</button></div>
+</div>
+<script>
+  window.__clicks = { player: 0, dialog: 0 };
+  document.getElementById("player").addEventListener("click", () => window.__clicks.player++);
+  document.getElementById("dialog-btn").addEventListener("click", () => window.__clicks.dialog++);
+  if (new URLSearchParams(location.search).has("outside")) {
+    const b = document.createElement("button");
+    b.id = "outside-play";
+    b.setAttribute("aria-label", "Afspelen");
+    b.textContent = "▶";
+    b.style.cssText = "position:absolute;left:0;top:380px";
+    b.addEventListener("click", () => document.getElementById("vid").play());
+    document.getElementById("player").appendChild(b);
+  }
+  window.showDialog = () => { document.getElementById("dialog").style.display = "block"; };
+</script>
+</body>
+</html>

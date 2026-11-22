@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Speler die in schermvullend de video verplaatst</title>
+<script src="lib/track.js"></script>
+<style>body { margin: 0; background: #222; height: 2000px; } #player { position: relative; width: 640px; height: 360px; margin: 40px; } .html5-video-player { width: 640px; height: 360px; } video { width: 640px; height: 360px; display: block; background: #000; } #site-dialog { position: fixed; left: 100px; top: 100px; width: 300px; height: 200px; background: #fff; display: none; } #site-dialog.on { display: block; }</style>
+</head>
+<body>
+<div id="full-bleed"></div>
+<div id="player"><div class="html5-video-player" id="movie"><video id="vid" src="/fixtures/media/v360.mp4" autoplay muted loop preload="auto"></video></div></div>
+<div id="site-dialog" role="dialog">Cookies</div>
+<dialog id="modal">Modal</dialog>
+<script>
+  // Like YouTube: in fullscreen the player moves to another block and the old
+  // block is hidden.
+  const movie = document.getElementById("movie");
+  document.addEventListener("fullscreenchange", () => {
+    const on = !!document.fullscreenElement;
+    document.getElementById(on ? "full-bleed" : "player").appendChild(movie);
+    document.getElementById("player").style.display = on ? "none" : "";
+    document.getElementById("vid").play().catch(() => {});
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "name": "gaffer",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "node build/build.js",
+    "dev": "node build/dev.js",
+    "test": "npm run build && node test/e2e/vendor.js --check && node test/fixtures/ensure.js && node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=./test/reporter.js --test-reporter-destination=stdout \"test/unit/*.test.js\" \"test/e2e/*.test.js\"",
+    "release": "node build/release.js",
+    "extension": "node build/extension.js",
+    "icons": "node build/icons.js",
+    "chrome": "node test/e2e/chrome.js",
+    "vendor:hls": "node test/e2e/vendor.js hls",
+    "vendor:dash": "node test/e2e/vendor.js dash"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

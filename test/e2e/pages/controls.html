@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Player controls by their own class names</title>
+<script src="lib/track.js"></script>
+<style>
+  body { margin: 0; background: #222; }
+  .player { position: relative; width: 640px; height: 360px; margin: 40px; }
+  video { width: 640px; height: 360px; display: block; background: #000; }
+  .bar { position: absolute; left: 0; right: 0; bottom: 0; height: 48px; background: rgba(200, 30, 30, 0.8); }
+  .top { position: absolute; left: 0; right: 0; top: 0; height: 40px; background: rgba(30, 30, 200, 0.8); }
+  .mute { display: inline-block; width: 40px; height: 40px; }
+</style>
+</head>
+<body>
+<div class="player" id="box"><video id="vid" src="/fixtures/media/v360.mp4" autoplay muted loop preload="auto"></video></div>
+<script>
+  // Each player's own control bar and mute button, smaller than the video, so
+  // only the known class names can hide them (not the 60 percent rule).
+  const KINDS = {
+    kaltura: { bars: ['<div class="playkit-top-bar top"></div>', '<div class="playkit-bottom-bar bar"><div class="playkit-control-button-container playkit-volume-control"><button class="playkit-control-button mute"></button></div></div>'], mute: ".playkit-control-button" },
+    theoplayer: { bars: ['<theoplayer-control-bar class="bar"><theoplayer-mute-button class="mute"></theoplayer-mute-button></theoplayer-control-bar>'], mute: "theoplayer-mute-button" },
+    vimeo: { bars: ['<div class="vp-title top"></div>', '<div class="vp-controls bar"></div>'], mute: null },
+    mejs: { bars: ['<div class="mejs__controls bar"><div class="mejs__button mejs__volume-button"><button class="mute"></button></div></div>'], mute: ".mejs__volume-button button" },
+    fluid: { bars: ['<div class="fluid_controls_container bar"><div class="fluid_button fluid_button_volume mute"></div></div>'], mute: ".fluid_button_volume" },
+    mediachrome: { bars: ['<media-control-bar class="bar"><media-mute-button class="mute"></media-mute-button></media-control-bar>', '<media-loading-indicator class="top"></media-loading-indicator>'], mute: "media-mute-button" },
+    vidstack: { bars: ['<div class="vds-controls bar"><button class="vds-mute-button vds-button mute"></button></div>', '<div class="vds-buffering-indicator top"></div>'], mute: ".vds-mute-button" },
+    wistia: { bars: ['<div class="w-bottom-bar bar"><button class="mute" aria-label="Mute"></button></div>'], mute: ".mute" },
+    clappr: { bars: ['<div class="media-control bar"><div class="drawer-container" data-volume><div class="drawer-icon-container" data-volume><div class="drawer-icon media-control-icon mute" data-volume></div></div></div></div>'], mute: ".drawer-icon[data-volume]" },
+  };
+  const kind = KINDS[new URLSearchParams(location.search).get("kind")];
+  const box = document.getElementById("box");
+  const v = document.getElementById("vid");
+  box.insertAdjacentHTML("beforeend", kind.bars.join(""));
+  window.__bars = [...box.querySelectorAll(".bar,.top")];
+  window.__muteClicks = 0;
+  if (kind.mute) box.querySelector(kind.mute).addEventListener("click", () => { window.__muteClicks++; v.muted = !v.muted; });
+</script>
+</body>
+</html>

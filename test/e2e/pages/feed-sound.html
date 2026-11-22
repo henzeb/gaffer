@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Feed with its own sound state</title>
+<script src="lib/track.js"></script>
+<style>
+  body { margin: 0; background: #222; }
+  .card { position: relative; width: 360px; height: 640px; margin: 20px 40px; }
+  video { position: absolute; inset: 0; width: 360px; height: 640px; background: #000; }
+  .overlay { position: absolute; inset: 0; }
+  .vol { position: absolute; left: 10px; top: 10px; width: 40px; height: 40px; }
+</style>
+</head>
+<body>
+<script>
+  // Like TikTok: every video is its own element, and the site keeps one sound
+  // state that it gives every video when it starts. Only its own button changes it.
+  // &dead: the button does nothing.
+  const q = new URLSearchParams(location.search);
+  window.__site = { muted: true, volume: 0.7, clicks: 0 };
+  const all = [];
+  const apply = (v) => { v.muted = __site.muted; v.volume = __site.volume; };
+  for (let i = 0; i < 2; i++) {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = '<video id="v' + i + '" src="/fixtures/media/loud.mp4" loop playsinline preload="auto"></video><div class="overlay"><button class="vol" aria-label="Volume"></button></div>';
+    document.body.appendChild(card);
+    const v = card.querySelector("video");
+    all.push(v);
+    v.addEventListener("play", () => apply(v));
+    card.querySelector(".vol").addEventListener("click", () => {
+      __site.clicks++;
+      if (q.has("dead")) return;
+      __site.muted = !__site.muted;
+      all.forEach(apply);
+    });
+  }
+  window.__next = () => { all[0].pause(); all[1].scrollIntoView(); return all[1].play(); };
+  all[0].play();
+</script>
+</body>
+</html>

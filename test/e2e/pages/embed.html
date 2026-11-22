@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Speler met de video boven het beeld tot de start</title>
+<script src="lib/track.js"></script>
+<style>body { margin: 0; background: #222; height: 2000px; } #player { position: relative; width: 800px; height: 450px; overflow: hidden; background: #000; } #container { position: relative; height: 0; width: 800px; } video { position: absolute; left: 0; top: -450px; width: 800px; height: 450px; } .playing video { top: 0; } .thumb-overlay { position: absolute; inset: 0; background: url(data:image/gif;base64,R0lGODlhAQABAAAAACw=) #353; } .cued-play-button { position: absolute; left: 360px; top: 200px; width: 80px; height: 50px; } .playing .thumb-overlay { display: none; }</style>
+</head>
+<body>
+<div id="player"><div class="html5-video-player" id="movie" aria-label="Video Player" style="width:800px;height:450px;position:relative"><div id="container"><video id="vid" muted loop preload="none"></video></div><div class="thumb-overlay"></div></div></div>
+<div class="ytPlayerControlsContainerHost" id="player-controls" style="position:absolute;left:0;top:0;width:800px;height:450px"><button class="cued-play-button" aria-label="Play video">Play</button><button class="pause" aria-label="Pause video" style="position:absolute;left:360px;top:200px;width:80px;height:50px;display:none;visibility:visible;pointer-events:auto">Pause</button></div>
+<script>
+  const start = () => { const v = document.getElementById("vid"); document.getElementById("movie").classList.add("playing"); document.querySelector(".cued-play-button").style.display = "none"; document.querySelector(".pause").style.display = "block"; v.src = "/fixtures/media/v360.mp4"; v.play().catch(() => {}); };
+  const c = document.querySelector(".pause"); c.addEventListener("click", () => (window.__pauseClicks = (window.__pauseClicks || 0) + 1));
+  document.querySelector(".cued-play-button").addEventListener("click", start);
+</script>
+</body>
+</html>

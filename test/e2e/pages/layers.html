@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Lagen</title>
+<script src="lib/track.js"></script>
+<style>
+  body { margin: 0; background: #222; color: #ddd; }
+  #player { position: relative; width: 640px; height: 360px; margin: 40px; }
+  video { width: 640px; height: 360px; display: block; background: #000; }
+  #inner { position: absolute; left: 0; right: 0; bottom: 0; height: 60px; z-index: 50; pointer-events: none; }
+  #menu { position: absolute; right: 10px; bottom: 50px; width: 200px; height: 100px; z-index: 2000; display: none; }
+  #below { margin: 0 40px; }
+  #balloon { position: absolute; left: 60px; top: 300px; width: 300px; height: 120px; z-index: 100; background: #fc0; display: none; }
+  #controls { position: absolute; left: 0; right: 0; bottom: -90px; height: 100px; }
+  #tipIn { position: absolute; left: 0; bottom: 100%; width: 400px; height: 80px; z-index: 311; background: #0cf; display: none; }
+  #carousel { position: fixed; inset: 0; z-index: 1000; overflow: auto; background: rgba(0, 0, 0, .85); display: none; }
+  #carousel .slide { height: 600px; margin: 20px; background: #555; }
+</style>
+</head>
+<body>
+<div id="player"><video id="vid" src="/fixtures/media/v360.mp4" autoplay muted loop preload="auto"></video><div id="inner" class="caption-window"></div><div id="menu"></div><div id="controls"><div id="tipIn"></div></div></div>
+<div id="below"><button id="tip">Info</button></div>
+<div id="balloon"></div>
+<div id="carousel"><div class="slide"></div><div class="slide"></div><div class="slide"></div></div>
+<script>
+  window.showBalloon = () => { document.getElementById("balloon").style.display = "block"; };
+  window.showTipIn = () => { document.getElementById("tipIn").style.display = "block"; };
+  window.showCarousel = () => { document.getElementById("carousel").style.display = "block"; };
+</script>
+</body>
+</html>

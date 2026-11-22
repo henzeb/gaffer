@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Canvas-stream</title>
+<script src="lib/track.js"></script>
+<style>body { margin: 0; background: #222; } video { width: 640px; height: 360px; margin: 40px; display: block; background: #000; } canvas { display: none; }</style>
+</head>
+<body>
+<canvas id="c" width="320" height="180"></canvas>
+<video id="vid" autoplay muted></video>
+<script>
+  const c = document.getElementById("c");
+  const g = c.getContext("2d");
+  let n = 0;
+  setInterval(() => {
+    n++;
+    g.fillStyle = "hsl(" + (n * 7) + " 70% 50%)";
+    g.fillRect(0, 0, 320, 180);
+    g.fillStyle = "#fff";
+    g.font = "40px sans-serif";
+    g.fillText(String(n), 20, 100);
+  }, 66);
+  document.getElementById("vid").srcObject = c.captureStream(15);
+</script>
+</body>
+</html>

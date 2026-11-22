@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Feed met Vorige en Volgende</title>
+<script src="lib/track.js"></script>
+<style>
+  body { margin: 0; background: #222; }
+  .feed-player { position: relative; width: 640px; height: 360px; margin: 40px; }
+  video { width: 640px; height: 360px; display: block; background: #000; }
+  .nav { position: absolute; top: 160px; }
+  #prev { left: 8px; } #next { right: 8px; }
+</style>
+</head>
+<body>
+<div class="feed-player">
+  <video id="vid" muted autoplay playsinline src="/fixtures/media/v360.mp4"></video>
+  <button class="nav" id="prev"><span>Vorige</span></button>
+  <button class="nav" id="next"><span>Volgende</span></button>
+</div>
+<script>
+  const items = ["/fixtures/media/v360.mp4", "/fixtures/media/short.mp4"];
+  let i = 0;
+  const v = document.getElementById("vid");
+  const go = (d) => { i = (i + d + items.length) % items.length; v.src = items[i]; v.play().catch(() => {}); };
+  document.getElementById("prev").addEventListener("click", () => go(-1));
+  document.getElementById("next").addEventListener("click", () => go(1));
+</script>
+</body>
+</html>

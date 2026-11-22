@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Tracks bij nagebootste spelers</title>
+<script src="lib/track.js"></script>
+<style>body { margin: 0; background: #222; color: #ddd; } #player { position: relative; width: 640px; margin: 40px; } video { width: 640px; height: 360px; display: block; background: #000; }</style>
+</head>
+<body>
+<div id="player"><video id="vid" src="/fixtures/media/v360.mp4" autoplay muted loop preload="auto"></video></div>
+<script>
+  const type = new URLSearchParams(location.search).get("type");
+  const v = document.getElementById("vid");
+  const box = document.getElementById("player");
+  const LANGS = ["en", "nl"];
+  const NAMES = { en: "English", nl: "Nederlands" };
+  const S = (window.__state = { text: null, audio: "en" });
+  window.__ytRates = [];
+
+  function addTrackElements() {
+    LANGS.forEach((c) => {
+      const t = document.createElement("track");
+      t.kind = "subtitles";
+      t.srclang = c;
+      t.label = NAMES[c];
+      t.src = "streams/subs-" + c + ".vtt";
+      v.appendChild(t);
+    });
+  }
+
+  function modeTracks() {
+    return LANGS.map((c) => {
+      const t = { kind: "subtitles", label: NAMES[c], language: c, _m: "disabled" };
+      Object.defineProperty(t, "mode", { get: () => t._m, set: (m) => { t._m = m; if (m === "showing") S.text = c; else if (S.text === c) S.text = null; } });
+      return t;
+    });
+  }
+
+  function enabledTracks() {
+    return LANGS.map((c, i) => {
+      const t = { label: NAMES[c], language: c, _e: i === 0 };
+      Object.defineProperty(t, "enabled", { get: () => t._e, set: (e) => { t._e = e; if (e) S.audio = c; } });
+      return t;
+    });
+  }
+
+  function fakeHls() {
+    const h = { media: v, subtitleTracks: LANGS.map((c) => ({ name: NAMES[c], lang: c })), audioTracks: LANGS.map((c) => ({ name: NAMES[c], lang: c })), subtitleDisplay: true, _s: -1, _a: 0 };
+    Object.defineProperty(h, "subtitleTrack", { get: () => h._s, set: (i) => { h._s = i; S.text = i >= 0 ? LANGS[i] : null; } });
+    Object.defineProperty(h, "audioTrack", { get: () => h._a, set: (i) => { h._a = i; S.audio = LANGS[i]; } });
+    return h;
+  }
+
+  const players = {
+    youtube() {
+      box.className = "html5-video-player";
+      const captionTracks = LANGS.map((c) => ({ languageCode: c, name: { simpleText: NAMES[c] } }));
+      let cap = {};
+      const audio = LANGS.map((c) => ({ id: c + ".4", getLanguageInfo: () => ({ getId: () => c, getName: () => NAMES[c] }) }));
+      let cur = audio[0];
+      box.getPlayerState = () => 1;
+      box.getPlayerResponse = () => ({ captions: { playerCaptionsTracklistRenderer: { captionTracks } } });
+      box.getOption = (m, o) => (o === "track" ? cap : o === "tracklist" ? captionTracks : null);
+      box.setOption = (m, o, val) => { cap = val; S.text = val.languageCode || null; };
+      box.loadModule = () => {};
+      box.unloadModule = () => { cap = {}; S.text = null; };
+      box.getAvailableAudioTracks = () => audio;
+      box.getAudioTrack = () => cur;
+      box.setAudioTrack = (t) => { cur = t; S.audio = t.getLanguageInfo().getId(); };
+      box.getAvailablePlaybackRates = () => [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+      box.setPlaybackRate = (r) => { window.__ytRates.push(r); v.playbackRate = r; };
+    },
+    jwplayer() {
+      let cap = 0, aud = 0;
+      window.jwplayer = () => ({
+        getContainer: () => box,
+        getQualityLevels: () => [],
+        getCaptionsList: () => [{ id: "off", label: "Off" }].concat(LANGS.map((c) => ({ label: NAMES[c], language: c }))),
+        getCurrentCaptions: () => cap,
+        setCurrentCaptions: (i) => { cap = i; S.text = i > 0 ? LANGS[i - 1] : null; },
+        getAudioTracks: () => LANGS.map((c) => ({ name: NAMES[c], language: c })),
+        getCurrentAudioTrack: () => aud,
+        setCurrentAudioTrack: (i) => { aud = i; S.audio = LANGS[i]; },
+      });
+    },
+    videojs() {
+      const text = modeTracks();
+      const audio = enabledTracks();
+      const player = { el: () => box, textTracks: () => text, audioTracks: () => audio };
+      window.videojs = { getPlayers: () => ({ p: player }) };
+    },
+    plyr() {
+      box.className = "plyr";
+      addTrackElements();
+      const p = { captions: { active: false }, _t: -1 };
+      Object.defineProperty(p, "currentTrack", { get: () => p._t, set: (i) => { p._t = i; S.text = p.captions.active ? LANGS[i] : null; } });
+      p.toggleCaptions = (on) => { p.captions.active = on; S.text = on && p._t >= 0 ? LANGS[p._t] : null; };
+      v.plyr = p;
+    },
+    kaltura() {
+      const text = [{ index: 0, language: "off", label: "Off", active: true }].concat(LANGS.map((c, i) => ({ index: i + 1, language: c, label: NAMES[c], active: false })));
+      const audio = LANGS.map((c, i) => ({ index: i, language: c, label: NAMES[c], active: i === 0 }));
+      text.forEach((t) => (t._type = "text"));
+      audio.forEach((t) => (t._type = "audio"));
+      const p = {
+        Track: { VIDEO: "video", TEXT: "text", AUDIO: "audio" },
+        getVideoElement: () => v,
+        getTracks: (type) => (type === "text" ? text : type === "audio" ? audio : []),
+        selectTrack: (t) => {
+          const list = t._type === "text" ? text : audio;
+          list.forEach((x) => (x.active = x === t));
+          if (t._type === "text") S.text = t.language === "off" ? null : t.language;
+          else S.audio = t.language;
+        },
+      };
+      window.KalturaPlayer = { getPlayers: () => ({ k1: p }) };
+    },
+    flowplayer() {
+      box.className = "flowplayer";
+      const api = { root: box, engine: { hlsjs: fakeHls() } };
+      window.flowplayer = Object.assign(() => api, { instances: [api] });
+    },
+    hls() {
+      v.hls = fakeHls();
+    },
+    dashjs() {
+      const text = LANGS.map((c) => ({ lang: c, labels: [{ text: NAMES[c] }] }));
+      const audio = LANGS.map((c, i) => ({ id: i, lang: c, labels: [{ text: NAMES[c] }] }));
+      let ti = -1, on = false, cur = audio[0];
+      window.dashPlayer = {
+        getVideoElement: () => v,
+        getTracksFor: (type) => (type === "text" ? text : type === "audio" ? audio : []),
+        setTextTrack: (i) => { ti = i; S.text = on && i >= 0 ? LANGS[i] : null; },
+        enableText: (b) => { on = b; S.text = on && ti >= 0 ? LANGS[ti] : null; },
+        isTextEnabled: () => on,
+        getCurrentTextTrackIndex: () => ti,
+        getCurrentTrackFor: () => cur,
+        setCurrentTrack: (t) => { cur = t; S.audio = t.lang; },
+      };
+    },
+    bitmovin() {
+      const subs = LANGS.map((c) => ({ id: "s-" + c, label: NAMES[c], lang: c, enabled: false }));
+      const audio = LANGS.map((c) => ({ id: "a-" + c, label: NAMES[c], lang: c }));
+      let cur = audio[0];
+      window.bitmovinPlayer = {
+        getContainer: () => box,
+        subtitles: {
+          list: () => subs,
+          enable: (id) => { subs.forEach((s) => { if (s.id === id) s.enabled = true; }); S.text = id.slice(2); },
+          disable: (id) => { subs.forEach((s) => { if (s.id === id) s.enabled = false; }); if (!subs.some((s) => s.enabled)) S.text = null; },
+        },
+        getAvailableAudio: () => audio,
+        getAudio: () => cur,
+        setAudio: (id) => { cur = audio.find((a) => a.id === id); S.audio = cur.lang; },
+      };
+    },
+    theoplayer() {
+      window.theo = { element: box, textTracks: modeTracks(), audioTracks: enabledTracks() };
+    },
+    clappr() {
+      const pb = {
+        el: v,
+        closedCaptionsTracks: LANGS.map((c, i) => ({ id: i, name: NAMES[c], track: { language: c } })),
+        audioTracks: LANGS.map((c) => ({ id: "a-" + c, label: NAMES[c], language: c })),
+        _cc: -1,
+        switchAudioTrack: (id) => { pb.currentAudioTrack = pb.audioTracks.find((a) => a.id === id); S.audio = pb.currentAudioTrack.language; },
+      };
+      pb.currentAudioTrack = pb.audioTracks[0];
+      Object.defineProperty(pb, "closedCaptionsTrackId", { get: () => pb._cc, set: (i) => { pb._cc = i; S.text = i >= 0 ? LANGS[i] : null; } });
+      window.clapprPlayer = { core: { activePlayback: pb } };
+    },
+    shaka() {
+      const text = LANGS.map((c, i) => ({ id: i + 1, language: c, label: NAMES[c], active: i === 0 }));
+      const audio = LANGS.map((c, i) => ({ language: c, label: NAMES[c], active: i === 0 }));
+      let visible = false;
+      window.shakaPlayer = {
+        getMediaElement: () => v,
+        getVariantTracks: () => [],
+        getConfiguration: () => ({ abr: { enabled: true } }),
+        getTextTracks: () => text,
+        selectTextTrack: (t) => { text.forEach((x) => (x.active = x === t)); S.text = visible ? t.language : null; },
+        setTextTrackVisibility: (b) => { visible = b; const a = text.find((x) => x.active); S.text = b && a ? a.language : null; },
+        isTextTrackVisible: () => visible,
+        getAudioTracks: () => audio,
+        selectAudioTrack: (t) => { audio.forEach((x) => (x.active = x === t)); S.audio = t.language; },
+      };
+    },
+    vidstack() {
+      const mp = document.createElement("media-player");
+      box.insertBefore(mp, v);
+      mp.appendChild(v);
+      const auds = LANGS.map((c, i) => {
+        const t = { label: NAMES[c], language: c, _s: i === 0 };
+        Object.defineProperty(t, "selected", { get: () => t._s, set: (on) => { if (!on) return; auds.forEach((x) => (x._s = x === t)); S.audio = c; } });
+        return t;
+      });
+      window.__vsTracks = modeTracks();
+      mp.textTracks = { toArray: () => window.__vsTracks.slice() };
+      mp.audioTracks = { toArray: () => auds.slice() };
+    },
+    native() {
+      addTrackElements();
+      Object.defineProperty(S, "text", { get: () => { const t = [...v.textTracks].find((x) => x.mode === "showing"); return t ? t.language : null; } });
+    },
+  };
+  players[type]();
+
+  // Chapters (SPEC §11.14): every player offers the same three its own way.
+  const CH = [[0, "Intro"], [20, "Middle"], [40, "End"]];
+  const cueTrack = (key) => { const t = { kind: "chapters", mode: "disabled" }; Object.defineProperty(t, "cues", { get: () => (t.mode === "disabled" ? null : CH.map(([startTime, x]) => ({ startTime, [key]: x }))) }); return t; };
+  const chapters = {
+    youtube() {
+      const r = (id) => ({ currentVideoEndpoint: { watchEndpoint: { videoId: id } }, playerOverlays: { playerOverlayRenderer: { decoratedPlayerBarRenderer: { decoratedPlayerBarRenderer: { playerBar: { multiMarkersPlayerBarRenderer: { markersMap: [{ key: "HEATSEEKER", value: { markers: [] } }, { key: "DESCRIPTION_CHAPTERS", value: { chapters: CH.map(([t, x]) => ({ chapterRenderer: { timeRangeStartMillis: t * 1000, title: { simpleText: x } } })) } }] } } } } } } });
+      window.__ytOther = false;
+      box.getVideoData = () => ({ video_id: "a" });
+      box.getWatchNextResponse = () => r(window.__ytOther ? "b" : "a");
+    },
+    jwplayer() { const get = window.jwplayer; window.jwplayer = () => Object.assign(get(), { getCues: () => CH.map(([begin, text]) => ({ begin, text, cueType: "chapters" })).concat({ begin: 5, text: "Ad", cueType: "ads" }) }); },
+    videojs() { const p = window.videojs.getPlayers().p; const l = p.textTracks().concat(window.__chTrack = cueTrack("text")); p.textTracks = () => l; },
+    plyr() { v.plyr.config = { markers: { enabled: true, points: CH.map(([time, label]) => ({ time, label })) } }; },
+    shaka() { Object.assign(window.shakaPlayer, { getChaptersTracks: () => [{ id: 1, language: "en" }], getChapters: () => CH.map(([startTime, title]) => ({ startTime, title })) }); },
+    shaka5() { Object.assign(window.shakaPlayer, { getAssetUri: () => "x", getChaptersTracks: () => [{ id: 1, language: "en" }], getChaptersAsync: () => Promise.resolve(CH.map(([startTime, title]) => ({ startTime, title }))) }); },
+    bitmovin() { window.bitmovinPlayer.getSource = () => ({ metadata: { markers: CH.map(([time, title]) => ({ time, title })) } }); },
+    theoplayer() { window.theo.textTracks.push(window.__chTrack = cueTrack("content")); },
+    vidstack() { window.__vsTracks.push(window.__chTrack = cueTrack("text")); },
+    native() {
+      const t = document.createElement("track");
+      t.kind = "chapters";
+      t.srclang = "en";
+      t.src = URL.createObjectURL(new Blob(["WEBVTT\n\n00:00.000 --> 00:20.000\nIntro\n\n00:20.000 --> 00:40.000\nMiddle\n\n00:40.000 --> 01:00.000\nEnd\n"], { type: "text/vtt" }));
+      v.appendChild(t);
+      t.track.mode = "disabled";
+      window.__chTrack = t.track;
+    },
+    session() { navigator.mediaSession.metadata = new MediaMetadata({ title: "x", chapterInfo: CH.map(([startTime, title]) => ({ startTime, title })) }); },
+  };
+  const ch = new URLSearchParams(location.search).get("chapters");
+  if (ch) chapters[ch]();
+</script>
+</body>
+</html>

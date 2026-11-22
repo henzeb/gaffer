@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A page with errors while it loads, and a player in an iframe</title>
+<script src="lib/track.js"></script>
+<style>body { margin: 0; background: #222; } video { width: 640px; height: 360px; display: block; margin: 20px; } iframe { width: 720px; height: 440px; margin: 20px; border: 0; display: block; }</style>
+</head>
+<body>
+<video id="vid" src="/fixtures/media/v360.mp4" autoplay muted loop preload="auto"></video>
+<img src="/missing-at-load.png?token=secret123" alt="">
+<iframe id="frame" allow="autoplay; fullscreen"></iframe>
+<script>
+  const other = location.hostname === "localhost" ? "127.0.0.1" : "localhost";
+  document.getElementById("frame").src = "http://" + other + ":" + location.port + "/video.html";
+  setTimeout(() => { throw new Error("boom while loading"); }, 0);
+</script>
+</body>
+</html>

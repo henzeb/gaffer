@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Geen video</title>
+<script src="lib/track.js"></script>
+<style>body { margin: 0; background: #222; } video { width: 640px; height: 360px; margin: 40px; display: block; background: #000; }</style>
+</head>
+<body>
+<div id="slot"></div>
+<script>
+  window.addVideo = (res = 360) => {
+    const v = document.createElement("video");
+    v.id = "vid" + res;
+    v.src = "/fixtures/media/v" + res + ".mp4";
+    v.muted = true; v.loop = true; v.autoplay = true; v.preload = "auto";
+    document.getElementById("slot").replaceChildren(v);
+    return true;
+  };
+</script>
+</body>
+</html>

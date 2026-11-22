@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Video in a shadow root</title>
+<script src="lib/track.js"></script>
+<style>body { margin: 0; background: #222; } shadow-player { display: block; width: 640px; height: 360px; margin: 40px; }</style>
+</head>
+<body>
+<script>
+  // ?mode=open|closed: the video inside the shadow root. ?slot: the video in
+  // the page itself, shown through a slot in the shadow root (Media Chrome).
+  // The control bar and its mute button always lie in the shadow root.
+  const q = new URLSearchParams(location.search);
+  const mode = q.get("mode") || "open";
+  const slotted = q.has("slot");
+  const VIDEO = '<video src="/fixtures/media/v360.mp4" autoplay muted loop preload="auto"></video>';
+  customElements.define("shadow-player", class extends HTMLElement {
+    constructor() {
+      super();
+      const root = this.attachShadow({ mode });
+      window.__root = root;
+      root.innerHTML = '<style>.frame { position: relative; width: 640px; height: 360px; } video, ::slotted(video) { width: 640px; height: 360px; display: block; background: #000; } .bar { position: absolute; left: 0; right: 0; bottom: 0; height: 48px; background: rgba(200, 30, 30, 0.8); }</style>'
+        + '<div class="frame">' + (slotted ? "<slot></slot>" : VIDEO) + '<div class="vjs-control-bar bar"><button class="mute" aria-label="Mute"></button></div></div>';
+    }
+  });
+  const sp = document.createElement("shadow-player");
+  if (slotted) sp.innerHTML = VIDEO;
+  document.body.appendChild(sp);
+  window.__video = slotted ? sp.querySelector("video") : window.__root.querySelector("video");
+  window.__bar = window.__root.querySelector(".bar");
+  window.__muteClicks = 0;
+  window.__root.querySelector(".mute").addEventListener("click", () => { window.__muteClicks++; window.__video.muted = !window.__video.muted; });
+</script>
+</body>
+</html>

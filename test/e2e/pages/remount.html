@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Controls mounted on mouse-over</title>
+<script src="lib/track.js"></script>
+<style>
+  body { margin: 0; background: #222; }
+  #player { position: relative; width: 640px; height: 360px; margin: 40px; }
+  video { width: 640px; height: 360px; display: block; background: #000; }
+  .ctrl { position: absolute; left: 0; right: 0; bottom: 0; height: 50px; background: rgba(200, 30, 30, 0.8); }
+</style>
+</head>
+<body>
+<div id="player"><video id="vid" src="/fixtures/media/v360.mp4" autoplay muted loop playsinline preload="auto"></video></div>
+<script>
+  // Like NOS: the control bar is mounted on every mouse-over and removed again.
+  const p = document.getElementById("player");
+  window.__mounts = 0;
+  p.addEventListener("mouseenter", () => {
+    if (p.querySelector(".ctrl")) return;
+    const c = document.createElement("div");
+    c.className = "ctrl";
+    p.appendChild(c);
+    window.__mounts++;
+    window.__hiddenAtOnce = null;
+    requestAnimationFrame(() => { window.__hiddenAtOnce = getComputedStyle(c).visibility === "hidden"; });
+  });
+  window.__removed = [];
+  p.addEventListener("mouseleave", () => {
+    const c = p.querySelector(".ctrl");
+    if (c) { c.remove(); window.__removed.push(c); }
+  });
+</script>
+</body>
+</html>

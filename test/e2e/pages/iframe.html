@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Iframe van een ander domein</title>
+<script src="lib/track.js"></script>
+<style>body { margin: 0; background: #222; } iframe { width: 720px; height: 440px; margin: 20px; border: 0; display: block; }</style>
+</head>
+<body>
+<iframe id="frame" allow="autoplay; fullscreen"></iframe>
+<script>
+  const other = location.hostname === "localhost" ? "127.0.0.1" : "localhost";
+  document.getElementById("frame").src = "http://" + other + ":" + location.port + "/video.html";
+</script>
+</body>
+</html>

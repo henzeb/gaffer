@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Share buttons</title>
+<link rel="canonical" href="https://example.com/watch/42">
+<script src="lib/track.js"></script>
+<style>
+  body { margin: 0; background: #222; color: #ddd; font: 14px sans-serif; }
+  .card { position: relative; display: flex; gap: 10px; margin: 20px 40px; }
+  .player { position: relative; width: 640px; height: 360px; }
+  video { width: 640px; height: 360px; display: block; background: #000; }
+  .controls { position: absolute; left: 0; right: 0; bottom: 0; height: 40px; background: rgba(0,0,0,.4); }
+  .controls button, aside button { width: 60px; height: 30px; }
+  .panel { position: absolute; inset: 20px; background: #345; display: none; }
+  .panel.open { display: block; }
+  .gone { display: none; }
+</style>
+</head>
+<body>
+<script>
+  // ?in: a share button in the player's controls that opens a panel over the
+  // video. ?beside: a feed of two cards with the share button next to the
+  // video. ?none: no usable share button.
+  const q = new URLSearchParams(location.search);
+  window.__shared = [];
+  window.__copied = null;
+  window.__system = null;
+  if (navigator.clipboard) navigator.clipboard.writeText = (text) => { window.__copied = text; return Promise.resolve(); };
+  if (q.has("system")) navigator.share = (data) => { window.__system = data; return Promise.resolve(); };
+  const cards = q.has("beside") ? 2 : 1;
+  for (let i = 0; i < cards; i++) {
+    const card = document.createElement("div");
+    card.className = "card";
+    const id = i ? "vid" + i : "vid";
+    let html = '<div class="player"><video id="' + id + '" src="/fixtures/media/v360.mp4" loop muted playsinline preload="auto"></video>';
+    if (q.has("in")) html += '<div class="controls"><button class="play" aria-label="Play"></button><button class="sh" aria-label="Share"></button></div><div class="panel" role="dialog">Share this video</div>';
+    html += "</div>";
+    if (q.has("beside")) html += '<aside><button class="sh" title="Share video">↗</button></aside>';
+    if (q.has("none")) html += '<aside><button class="gone" aria-label="Share"></button><button>Deel 2</button><button aria-label="Shared playlists" disabled></button></aside>';
+    card.innerHTML = html;
+    document.body.appendChild(card);
+    const b = card.querySelector(".sh");
+    if (b) b.addEventListener("click", () => {
+      __shared.push(i);
+      const p = card.querySelector(".panel");
+      if (p) p.classList.add("open");
+    });
+  }
+  document.querySelectorAll("video").forEach((v) => v.play());
+</script>
+</body>
+</html>

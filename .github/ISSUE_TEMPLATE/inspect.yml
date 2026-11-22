@@ -1,0 +1,32 @@
+name: Inspect report
+description: A problem with a video or a site, with the report of Gaffer Inspect.
+title: "Inspect: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. The report contains the address of the page and of its streams, without their queries. Issues are public: check the report before you submit it.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What goes wrong?
+      description: What you did, and what happened.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+  - type: input
+    id: site
+    attributes:
+      label: Site
+      description: Filled in by Gaffer Inspect.
+  - type: textarea
+    id: report
+    attributes:
+      label: Gaffer Inspect report
+      description: Report an issue in Gaffer Inspect put the report on your clipboard; paste it here. If it was saved as a file because it was too long, attach that file here instead.
+      render: text
+    validations:
+      required: true

@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Nagebootste spelers</title>
+<script src="lib/track.js"></script>
+<style>body { margin: 0; background: #222; color: #ddd; } #player { position: relative; width: 640px; margin: 40px; } video { width: 640px; height: 360px; display: block; background: #000; } ul { position: absolute; right: 0; bottom: 40px; margin: 0; }</style>
+</head>
+<body>
+<div id="player"><video id="vid" src="/fixtures/media/v360.mp4" autoplay muted loop preload="auto"></video></div>
+<script>
+  const type = new URLSearchParams(location.search).get("type");
+  const v = document.getElementById("vid");
+  const box = document.getElementById("player");
+  const heights = [1080, 720, 360];
+  let current = 360;
+  window.__sets = [];
+  function load(h) {
+    window.__sets.push(h);
+    current = h;
+    const t = v.currentTime;
+    v.src = "/fixtures/media/v" + h + ".mp4";
+    v.addEventListener("loadedmetadata", () => { v.currentTime = t; v.play().catch(() => {}); }, { once: true });
+  }
+  // Ad mode of the YouTube stand-in (SPEC §11.13): the player gets the class
+  // ad-showing, an ad module with a Skip button and another source with
+  // another duration; at the end the video comes back where it was.
+  function youtubeAds() {
+    const chrome = document.createElement("div");
+    chrome.className = "ytp-chrome-bottom";
+    chrome.style.cssText = "position:absolute;left:0;right:0;bottom:0;height:48px;background:rgba(0,0,0,.4)";
+    const next = document.createElement("button");
+    next.setAttribute("aria-label", "Next");
+    window.__nextClicks = 0;
+    next.addEventListener("click", () => window.__nextClicks++);
+    chrome.appendChild(next);
+    box.appendChild(chrome);
+    const ads = document.createElement("div");
+    ads.className = "video-ads ytp-ad-module";
+    ads.style.cssText = "position:absolute;inset:0;pointer-events:none";
+    box.appendChild(ads);
+    window.__adClicks = 0;
+    if (new URLSearchParams(location.search).has("stack")) {
+      const outer = document.createElement("div");
+      outer.id = "outer";
+      outer.style.cssText = "position:relative;width:640px;margin:40px";
+      box.replaceWith(outer);
+      outer.appendChild(box);
+      box.style.cssText = "position:relative;z-index:0;margin:0;width:640px;height:360px";
+      const vc = document.createElement("div");
+      vc.style.cssText = "position:relative;z-index:10;width:640px;height:360px";
+      v.replaceWith(vc);
+      vc.appendChild(v);
+    }
+    let back = null;
+    window.__ad = {
+      start() {
+        back = { src: v.getAttribute("src"), time: v.currentTime };
+        box.classList.add("ad-showing");
+        ads.innerHTML = '<div class="ytp-ad-player-overlay" style="position:absolute;inset:0"><span class="ytp-ad-badge" style="position:absolute;left:10px;top:150px">Sponsored</span><button class="ytp-skip-ad-button" style="position:absolute;right:10px;top:150px;pointer-events:auto">Skip</button><div class="ytp-ad-persistent-progress-bar-container" style="position:absolute;left:0;right:0;bottom:0;height:3px;background:#fc0"></div></div>';
+        if (document.getElementById("outer")) ads.querySelector("button").style.cssText += ";top:auto;right:8px;bottom:16px;width:90px;height:36px;z-index:850";
+        ads.querySelector("button").addEventListener("click", () => window.__adClicks++);
+        v.src = "/fixtures/media/short.mp4";
+        v.play().catch(() => {});
+      },
+      end() {
+        box.classList.remove("ad-showing");
+        ads.innerHTML = "";
+        v.src = back.src;
+        v.addEventListener("loadedmetadata", () => { v.currentTime = back.time; v.play().catch(() => {}); }, { once: true });
+      },
+    };
+  }
+  const players = {
+    youtube() {
+      box.className = "html5-video-player";
+      const names = { hd1080: 1080, hd720: 720, medium: 360 };
+      let q = "medium";
+      box.getAvailableQualityLevels = () => ["hd1080", "hd720", "medium", "auto"];
+      box.getPlaybackQuality = () => q;
+      box.setPlaybackQualityRange = () => {};
+      box.setPlaybackQuality = (id) => { q = id; if (names[id]) load(names[id]); };
+      if (new URLSearchParams(location.search).has("ad")) youtubeAds();
+    },
+    jwplayer() {
+      const levels = heights.map((h) => ({ label: h + "p" }));
+      let cur = 2;
+      window.jwplayer = () => ({
+        getQualityLevels: () => levels,
+        getContainer: () => box,
+        getCurrentQuality: () => cur,
+        setCurrentQuality: (i) => { cur = i; load(heights[i]); },
+      });
+    },
+    videojs() {
+      const ql = heights.map((h) => ({ height: h, bitrate: h * 1000, enabled: true }));
+      const player = { el: () => box, qualityLevels: () => ql };
+      window.videojs = { getPlayers: () => ({ p: player }) };
+      setInterval(() => {
+        const on = ql.filter((l) => l.enabled);
+        const want = on.length === ql.length ? 360 : on[0].height;
+        if (want !== current) load(want);
+      }, 200);
+    },
+    "videojs-sources"() {
+      const sources = heights.map((h) => ({ src: location.origin + "/fixtures/media/v" + h + ".mp4", type: "video/mp4", label: h + "p" }));
+      let cb = null;
+      const player = {
+        el: () => box,
+        currentSources: () => sources,
+        currentSrc: () => v.currentSrc,
+        src: (x) => { load(+x.src.match(/v(\d+)\.mp4/)[1]); },
+        one: (ev, fn) => v.addEventListener(ev, fn, { once: true }),
+        currentTime: (t) => (t === undefined ? v.currentTime : (v.currentTime = t)),
+        paused: () => v.paused,
+        playbackRate: (r) => (r === undefined ? v.playbackRate : (v.playbackRate = r)),
+        play: () => v.play(),
+      };
+      window.videojs = { getPlayers: () => ({ p: player }) };
+    },
+    radiant() {
+      let cur = 2;
+      const rmp = {
+        getBitrates: () => heights.map((h, i) => ({ height: h, active: i === cur })),
+        getCurrentBitrateIndex: () => cur,
+        setBitrate: (i) => { cur = i; load(heights[i]); },
+      };
+      box["__reactFiber$test"] = { memoizedState: { memoizedState: { current: rmp }, next: null }, memoizedProps: {}, return: null };
+    },
+    shaka() {
+      let abr = true, active = 360;
+      window.shakaPlayer = {
+        getVariantTracks: () => heights.map((h) => ({ height: h, bandwidth: h * 1000, active: h === active })),
+        getMediaElement: () => v,
+        getConfiguration: () => ({ abr: { enabled: abr } }),
+        configure: (c) => { abr = c.abr.enabled; },
+        selectVariantTrack: (t) => { active = t.height; load(t.height); },
+      };
+    },
+    dommenu() {
+      box.className = "video-js";
+      const ul = document.createElement("ul");
+      heights.forEach((h) => {
+        const li = document.createElement("li");
+        li.textContent = h + "p";
+        if (h === 360) li.className = "selected";
+        li.addEventListener("click", () => { ul.querySelectorAll("li").forEach((x) => (x.className = "")); li.className = "selected"; load(h); });
+        ul.appendChild(li);
+      });
+      box.appendChild(ul);
+    },
+    dashjs3() {
+      let abr = true, idx = 2;
+      window.dashPlayer = {
+        getVideoElement: () => v,
+        getBitrateInfoListFor: () => heights.map((h, i) => ({ qualityIndex: i, height: h, width: h * 16 / 9, bitrate: h * 1000 })),
+        getQualityFor: () => idx,
+        setQualityFor: (type, i) => { idx = i; load(heights[i]); },
+        getSettings: () => ({ streaming: { abr: { autoSwitchBitrate: { video: abr } } } }),
+        updateSettings: (c) => { abr = c.streaming.abr.autoSwitchBitrate.video; },
+      };
+    },
+    bitmovin() {
+      const qs = heights.map((h) => ({ id: "q" + h, height: h, width: h * 16 / 9, bitrate: h * 1000, label: h + "p" }));
+      let cur = qs[2];
+      window.bitmovinPlayer = {
+        getContainer: () => box,
+        getAvailableVideoQualities: () => qs,
+        getVideoQuality: () => cur,
+        setVideoQuality: (id) => { cur = qs.find((q) => q.id === id) || { id: "auto" }; if (cur.height) load(cur.height); },
+      };
+    },
+    theoplayer() {
+      const qualities = heights.map((h) => ({ id: "t" + h, height: h, bandwidth: h * 1000 }));
+      const track = { enabled: true, qualities, _t: undefined };
+      Object.defineProperty(track, "targetQuality", { get: () => track._t, set: (q) => { track._t = q; if (q) load(q.height); } });
+      window.theo = { element: box, videoTracks: [track] };
+    },
+    mediatracks() {
+      const list = heights.map((h) => ({ id: "r" + h, height: h, width: Math.round((h * 16) / 9), bitrate: h * 1000 }));
+      let sel = -1;
+      Object.defineProperty(list, "selectedIndex", { get: () => sel, set: (i) => { sel = i; if (i >= 0) load(list[i].height); } });
+      v.videoRenditions = list;
+    },
+    vidstack() {
+      const mp = document.createElement("media-player");
+      box.insertBefore(mp, v);
+      mp.appendChild(v);
+      const list = { readonly: false, auto: true, autoSelect() { list.auto = true; } };
+      const items = heights.map((h) => {
+        const q = { height: h, bitrate: h * 1000, _s: h === 360 };
+        Object.defineProperty(q, "selected", { get: () => q._s, set: (on) => { if (!on) return; items.forEach((x) => (x._s = x === q)); list.auto = false; load(h); } });
+        return q;
+      });
+      list.toArray = () => items.slice();
+      mp.qualities = list;
+    },
+    plyr() {
+      box.className = "plyr";
+      let q = 360;
+      v.plyr = { options: { quality: { default: 360, options: [1080, 720, 360] } }, get quality() { return q; }, set quality(h) { q = h; load(h); } };
+    },
+    flowplayer() {
+      box.className = "flowplayer";
+      let cur = -1;
+      const api = { root: box, video: { qualities: ["1080p", "720p", "360p"], get quality() { return cur; } }, quality: (i) => { cur = i; if (i >= 0) load(heights[i]); } };
+      window.flowplayer = Object.assign(() => api, { instances: [api] });
+    },
+    clappr() {
+      const pb = { el: v, levels: heights.map((h, i) => ({ id: i, label: h + "p", level: { height: h, bitrate: h * 1000 } })), _lvl: -1 };
+      Object.defineProperty(pb, "currentLevel", { get: () => pb._lvl, set: (i) => { pb._lvl = i; if (i >= 0) load(heights[i]); } });
+      window.clapprPlayer = { core: { activePlayback: pb } };
+    },
+    kaltura() {
+      let abr = true, active = 2;
+      const p = {
+        Track: { VIDEO: "video" },
+        getVideoElement: () => v,
+        getTracks: () => heights.map((h, i) => ({ index: i, height: h, bandwidth: h * 1000, active: i === active })),
+        isAdaptiveBitrateEnabled: () => abr,
+        enableAdaptiveBitrate: () => { abr = true; },
+        selectTrack: (t) => { abr = false; active = t.index; load(t.height); },
+      };
+      window.KalturaPlayer = { getPlayers: () => ({ k1: p }) };
+    },
+    brightcove() {
+      const host = document.createElement("video-js");
+      host.id = "bc_1";
+      host.className = "video-js bc-player-default";
+      box.insertBefore(host, v);
+      host.appendChild(v);
+      const ql = heights.map((h) => ({ height: h, bitrate: h * 1000, enabled: true }));
+      const player = { el: () => host, qualityLevels: () => ql };
+      window.bc = () => player;
+      window.videojs = { getPlayer: (id) => (id === "bc_1" ? player : null), players: { bc_1: player } };
+      setInterval(() => {
+        const on = ql.filter((l) => l.enabled);
+        const want = on.length === ql.length ? 360 : on[0].height;
+        if (want !== current) load(want);
+      }, 200);
+    },
+    vimeo() {
+      const wrap = document.createElement("div");
+      wrap.className = "vp-video-wrapper";
+      box.insertBefore(wrap, v);
+      wrap.appendChild(v);
+      const menu = document.createElement("div");
+      menu.className = "vp-menu";
+      menu.setAttribute("role", "menu");
+      ["Auto", "1080p", "720p", "360p"].forEach((label) => {
+        const item = document.createElement("div");
+        item.setAttribute("role", "menuitemradio");
+        item.setAttribute("aria-checked", label === "Auto" ? "true" : "false");
+        item.textContent = label;
+        item.addEventListener("click", () => {
+          menu.querySelectorAll("[role=menuitemradio]").forEach((x) => x.setAttribute("aria-checked", "false"));
+          item.setAttribute("aria-checked", "true");
+          if (label !== "Auto") load(parseInt(label, 10));
+        });
+        menu.appendChild(item);
+      });
+      document.body.appendChild(menu);
+    },
+  };
+  players[type]();
+</script>
+</body>
+</html>

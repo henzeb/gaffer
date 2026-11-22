@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>hls.js-achtige speler</title>
+<script src="lib/track.js"></script>
+<style>body { margin: 0; background: #222; } video { width: 640px; height: 360px; margin: 40px; display: block; background: #000; }</style>
+</head>
+<body>
+<div class="player"><video id="vid" muted loop preload="auto"></video></div>
+<script>
+  const q = new URLSearchParams(location.search);
+  class Hls {
+    constructor() { this.levels = []; this.media = null; this._level = -1; this._shown = -1; this.handlers = {}; }
+    static isSupported() { return true; }
+    loadSource(url) { this.url = url; fetch(url).then((r) => r.text()); }
+    attachMedia(media) {
+      this.media = media;
+      this.levels = [
+        { height: 1080, width: 1920, bitrate: 3000000, file: "v1080.mp4" },
+        { height: 720, width: 1280, bitrate: 1500000, file: "v720.mp4" },
+        { height: 360, width: 640, bitrate: 500000, file: "v360.mp4" },
+      ];
+      if (q.has("bad")) this.levels.unshift({ height: 2160, width: 3840, bitrate: 9000000, file: "audio-only.mp4" });
+      this._load(this.levels.length - 1);
+      this._timer = setInterval(() => this.trigger("hlsFragLoaded", {}), 500);
+    }
+    _load(i) {
+      const v = this.media, t = v.currentTime, playing = this._shown < 0 || !v.paused;
+      this._shown = i;
+      v.src = "/fixtures/media/" + this.levels[i].file;
+      v.addEventListener("loadedmetadata", () => { try { v.currentTime = t; } catch {} if (playing) v.play().catch(() => {}); }, { once: true });
+      this.trigger("hlsLevelSwitched", { level: i });
+    }
+    get currentLevel() { return this._level < 0 ? this._shown : this._level; }
+    set currentLevel(i) { this._level = i; this._load(i < 0 ? this.levels.length - 1 : i); }
+    get autoLevelEnabled() { return this._level < 0; }
+    on(ev, fn) { (this.handlers[ev] ||= []).push(fn); }
+    trigger(ev, data) { (this.handlers[ev] || []).forEach((fn) => fn(ev, data)); return true; }
+  }
+  window.Hls = Hls;
+  window.__hlsTrigger = Hls.prototype.trigger;
+  const hls = new Hls();
+  hls.loadSource("/streams/master.m3u8");
+  hls.attachMedia(document.getElementById("vid"));
+  if (q.has("global")) window.player = hls;
+  document.getElementById("vid").play().catch(() => {});
+</script>
+</body>
+</html>

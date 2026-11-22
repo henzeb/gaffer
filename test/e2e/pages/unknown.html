@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>An unknown player</title>
+<script src="lib/track.js"></script>
+<style>
+  body { margin: 0; background: #222; color: #ddd; font: 14px system-ui, sans-serif; }
+  .box { position: relative; width: 640px; height: 360px; margin: 40px 40px 0; }
+  video { width: 640px; height: 360px; display: block; background: #000; }
+  .ctrl { position: absolute; left: 0; right: 0; bottom: 0; height: 44px; background: rgba(200, 30, 30, 0.8); }
+  .click { position: absolute; inset: 0; }
+  .layer { position: absolute; inset: 0; }
+  .gate { position: absolute; left: 120px; top: 80px; width: 400px; height: 160px; background: #333; }
+  .ima-ad-container { position: absolute; right: 10px; top: 10px; width: 200px; height: 120px; background: rgba(30, 120, 30, 0.8); }
+  .ready { position: absolute; left: 10px; top: 10px; width: 200px; height: 60px; display: none; }
+  .below { width: 640px; height: 40px; margin: 0 40px; background: #345; }
+</style>
+</head>
+<body>
+<div class="box" id="box">
+  <video id="vid" src="/fixtures/media/v360.mp4" autoplay muted loop preload="auto"></video>
+  <div class="click"></div>
+  <div class="ctrl"><button>Play</button><button>Mute</button></div>
+  <div class="layer"><div class="gate" role="dialog" hidden><button id="accept">Yes, I am 18</button></div></div>
+  <div class="ima-ad-container"><button id="skip">Skip ad</button></div>
+  <div class="shaka-skip-ad-container ready"></div>
+  <div class="ima-ad-container hide-ad-container" id="idle" style="left: 0; top: 0; width: 640px; height: 360px; z-index: -1"></div>
+  <div role="dialog" class="ready"></div>
+</div>
+<div class="below" id="below">Controls under the video</div>
+<script>
+  // Without a known class anywhere: Direct hides what lies over the video, but
+  // not a window of the site or an ad, shown now or later; and not a site
+  // element under the video. Elements kept ready but not shown do not count.
+  window.__accepted = 0;
+  window.__skipped = 0;
+  document.getElementById("accept").addEventListener("click", () => window.__accepted++);
+  document.getElementById("skip").addEventListener("click", () => window.__skipped++);
+</script>
+</body>
+</html>

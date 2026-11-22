@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Casten</title>
+<script src="lib/track.js"></script>
+<style>body { margin: 0; background: #222; } .player { width: 640px; height: 360px; margin: 40px; } video { width: 640px; height: 360px; display: block; background: #000; }</style>
+</head>
+<body>
+<div class="player"><video id="vid" muted loop playsinline preload="auto"></video></div>
+<script>
+  const q = new URLSearchParams(location.search);
+  const vid = document.getElementById("vid");
+  window.__cast = { prompts: 0, watches: 0, cancels: [] };
+  class FakeRemote extends EventTarget {
+    constructor() { super(); this.state = "disconnected"; this.ids = 0; }
+    watchAvailability(cb) {
+      window.__cast.watches++;
+      const id = ++this.ids;
+      setTimeout(() => cb(!q.has("none")), 50);
+      return Promise.resolve(id);
+    }
+    cancelWatchAvailability(id) { window.__cast.cancels.push(id); return Promise.resolve(); }
+    prompt() {
+      window.__cast.prompts++;
+      this.state = "connecting";
+      this.dispatchEvent(new Event("connecting"));
+      setTimeout(() => { this.state = "connected"; this.dispatchEvent(new Event("connect")); }, 100);
+      return Promise.resolve();
+    }
+  }
+  Object.defineProperty(vid, "remote", { value: new FakeRemote(), configurable: true });
+  if (q.has("disabled")) vid.disableRemotePlayback = true;
+  if (q.has("mse")) vid.src = URL.createObjectURL(new MediaSource());
+  else { vid.src = "/fixtures/media/v360.mp4"; vid.play().catch(() => {}); }
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Versleutelde HLS</title>
+<script src="lib/track.js"></script>
+<style>body { margin: 0; background: #222; } video { width: 640px; height: 360px; margin: 40px; display: block; background: #000; }</style>
+</head>
+<body>
+<video id="vid" src="/fixtures/media/v720.mp4" autoplay muted loop preload="auto"></video>
+<script>
+  // As long as the video (60 s): only a manifest of this video blocks it.
+  fetch("/streams/encrypted.m3u8").then((r) => r.text()).then((t) => { window.__manifest = t; });
+</script>
+</body>
+</html>

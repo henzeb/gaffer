@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>hls.js live</title>
+<script src="lib/track.js"></script>
+<script src="vendor/hls.min.js"></script>
+<style>body { margin: 0; background: #222; } video { width: 640px; height: 360px; margin: 40px; display: block; background: #000; }</style>
+</head>
+<body>
+<div class="player"><video id="vid" muted preload="auto"></video></div>
+<script>
+  const v = document.getElementById("vid");
+  const hls = new Hls({ startLevel: 0, liveSyncDurationCount: 2, capLevelToPlayerSize: false });
+  hls.loadSource("/live/master.m3u8");
+  hls.attachMedia(v);
+  hls.on(Hls.Events.MANIFEST_PARSED, () => v.play().catch(() => {}));
+  window.__hlsTrigger = Hls.prototype.trigger;
+  window.__hls = hls;
+</script>
+</body>
+</html>

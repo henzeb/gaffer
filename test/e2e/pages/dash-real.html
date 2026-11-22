@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>dash.js</title>
+<script src="lib/track.js"></script>
+<script src="vendor/dash.min.js"></script>
+<style>body { margin: 0; background: #222; } video { width: 640px; height: 360px; margin: 40px; display: block; background: #000; }</style>
+</head>
+<body>
+<div class="player"><video id="vid" muted preload="auto"></video></div>
+<script>
+  const v = document.getElementById("vid");
+  const player = dashjs.MediaPlayer().create();
+  player.updateSettings({ streaming: { abr: { initialBitrate: { video: 300 } } } });
+  player.initialize(v, "/fixtures/media/dash/manifest.mpd", true);
+  window.dashPlayer = player;
+</script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Meerdere video's</title>
+<script src="lib/track.js"></script>
+<style>
+  body { margin: 0; background: #222; color: #ddd; font: 14px system-ui, sans-serif; }
+  .player { width: 640px; height: 360px; margin: 40px; }
+  video { width: 640px; height: 360px; display: block; background: #000; }
+  .grid { display: flex; flex-wrap: wrap; gap: 8px; margin: 40px; }
+  .grid video { width: 300px; height: 170px; }
+</style>
+</head>
+<body>
+<script>
+  const src = (h) => "/fixtures/media/v" + h + ".mp4";
+  if (new URLSearchParams(location.search).has("grid")) {
+    const g = document.createElement("div");
+    g.className = "grid";
+    for (let i = 0; i < 6; i++) {
+      const v = document.createElement("video");
+      v.src = src(360); v.muted = true; v.loop = true; v.autoplay = true;
+      g.appendChild(v);
+    }
+    document.body.appendChild(g);
+  } else {
+    [["v1", 360], ["v2", 720]].forEach(([id, h], i) => {
+      const box = document.createElement("div");
+      box.className = "player";
+      const v = document.createElement("video");
+      v.id = id; v.src = src(h); v.muted = true; v.loop = true; v.autoplay = true;
+      box.appendChild(v);
+      document.body.appendChild(box);
+      if (!i) { const p = document.createElement("p"); p.style.margin = "0 40px"; p.textContent = "Tekst van het artikel tussen twee video's."; document.body.appendChild(p); }
+    });
+  }
+  // Two JW Players: jwplayer() alone gives the first, jwplayer(id or element) the one asked for.
+  if (new URLSearchParams(location.search).has("jw")) {
+    const boxes = [...document.querySelectorAll(".player")];
+    const players = boxes.map((box, i) => {
+      box.classList.add("jwplayer");
+      box.id = "jw" + (i + 1);
+      const levels = (i ? [720, 480] : [360, 240]).map((h) => ({ label: h + "p" }));
+      let cur = 0;
+      return { getQualityLevels: () => levels, getContainer: () => box, getCurrentQuality: () => cur, setCurrentQuality: (n) => { cur = n; } };
+    });
+    window.jwplayer = (x) => (x === undefined ? players[0] : players.find((p) => p.getContainer() === x || p.getContainer().id === x));
+  }
+</script>
+</body>
+</html>

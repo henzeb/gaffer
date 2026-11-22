@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Nagebootste livestream</title>
+<script src="lib/track.js"></script>
+<style>body { margin: 0; background: #222; } video { width: 640px; height: 360px; margin: 40px; display: block; background: #000; }</style>
+</head>
+<body>
+<div id="player"><video id="vid" src="/fixtures/media/v360.mp4" autoplay muted preload="auto"></video></div>
+<script>
+  // ?dvr: a finite duration that grows (a window to rewind in, like NOS).
+  // ?flag: the duration of the file, but the player says it is live (video.js).
+  // __ahead moves the edge on, __start the start of the window.
+  const q = new URLSearchParams(location.search);
+  const v = document.getElementById("vid");
+  const t0 = performance.now();
+  window.__ahead = 0;
+  window.__start = 0;
+  window.liveEdge = () => Math.min(55, 20 + (performance.now() - t0) / 1000 + window.__ahead);
+  if (q.has("flag")) document.getElementById("player").className = "video-js vjs-live";
+  else Object.defineProperty(v, "duration", { configurable: true, get: () => (q.has("dvr") ? window.liveEdge() : Infinity) });
+  Object.defineProperty(v, "seekable", {
+    configurable: true,
+    get: () => ({ length: 1, start: () => window.__start, end: () => window.liveEdge() }),
+  });
+  v.addEventListener("loadedmetadata", () => { v.currentTime = window.liveEdge() - 1; }, { once: true });
+  window.__sitePlays = 0;
+  if (new URLSearchParams(location.search).has("replay")) {
+    setInterval(() => {
+      if (v.paused) { window.__sitePlays++; v.play().catch(() => {}); }
+    }, 300);
+  }
+</script>
+</body>
+</html>

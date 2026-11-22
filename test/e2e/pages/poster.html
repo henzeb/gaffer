@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Plaatje voor de start</title>
+<script src="lib/track.js"></script>
+<style>
+  body { margin: 0; background: #222; }
+  .player { position: relative; width: 640px; height: 360px; margin: 40px; }
+  video { width: 640px; height: 360px; display: block; background: #000; }
+  .cover { position: absolute; inset: 0; width: 640px; height: 360px; display: block; }
+  .big-play { position: absolute; left: 290px; top: 150px; width: 60px; height: 60px; }
+</style>
+</head>
+<body>
+<div class="player" id="player"><video id="vid" muted playsinline preload="metadata"></video></div>
+<script>
+  const q = new URLSearchParams(location.search);
+  const v = document.getElementById("vid");
+  const box = document.getElementById("player");
+  const svg = (c) => "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"><rect width="640" height="360" fill="' + c + '"/><circle cx="320" cy="180" r="80" fill="#fff"/></svg>');
+  const src = "/fixtures/media/v360.mp4";
+  window.__plays = 0;
+  v.addEventListener("play", () => window.__plays++);
+  if (q.has("overlay")) {
+    v.src = src;
+    const img = document.createElement("img");
+    img.id = "cover";
+    img.className = "cover";
+    img.src = svg("#c2410c");
+    box.appendChild(img);
+  } else {
+    v.poster = svg("#0369a1");
+    if (!q.has("lazy")) v.src = src;
+  }
+  const btn = document.createElement("button");
+  btn.className = "big-play";
+  btn.setAttribute("aria-label", "Afspelen");
+  btn.addEventListener("click", () => { if (!v.getAttribute("src")) v.src = src; v.play(); });
+  box.appendChild(btn);
+</script>
+</body>
+</html>

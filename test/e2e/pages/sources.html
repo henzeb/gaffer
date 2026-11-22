@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Meerdere sources</title>
+<script src="lib/track.js"></script>
+<style>body { margin: 0; background: #222; } video { width: 640px; height: 360px; margin: 40px; display: block; background: #000; }</style>
+</head>
+<body>
+<video id="vid" autoplay muted loop preload="auto">
+  <source src="/fixtures/media/v720.mp4" type="video/mp4" label="720p">
+  <source src="/fixtures/media/v360.mp4" type="video/mp4" label="360p">
+</video>
+<script>
+  if (new URLSearchParams(location.search).has("orig")) {
+    const s = document.createElement("source");
+    s.src = "/fixtures/media/v1080.mp4";
+    s.type = "video/mp4";
+    s.setAttribute("label", "Origineel");
+    document.getElementById("vid").appendChild(s);
+  }
+  if (new URLSearchParams(location.search).has("bad")) {
+    const s = document.createElement("source");
+    s.src = "/fixtures/media/audio-only.mp4";
+    s.type = "video/mp4";
+    s.setAttribute("label", "1080p");
+    document.getElementById("vid").appendChild(s);
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" type="static" mediaPresentationDuration="PT60S" minBufferTime="PT2S" profiles="urn:mpeg:dash:profile:isoff-on-demand:2011">
+  <Period>
+    <AdaptationSet mimeType="video/mp4" segmentAlignment="true">
+      <ContentProtection schemeIdUri="urn:mpeg:dash:mp4protection:2011" value="cenc"/>
+      <Representation id="v1080" bandwidth="3000000" width="1920" height="1080" codecs="avc1.640028"><BaseURL>v1080.mp4</BaseURL></Representation>
+      <Representation id="v720" bandwidth="1500000" width="1280" height="720" codecs="avc1.64001f"><BaseURL>v720.mp4</BaseURL></Representation>
+      <Representation id="v360" bandwidth="500000" width="640" height="360" codecs="avc1.64001e"><BaseURL>v360.mp4</BaseURL></Representation>
+    </AdaptationSet>
+    <AdaptationSet mimeType="audio/mp4">
+      <Representation id="a1" bandwidth="32000" codecs="mp4a.40.2"><BaseURL>audio.mp4</BaseURL></Representation>
+    </AdaptationSet>
+  </Period>
+</MPD>

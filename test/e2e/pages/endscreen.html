@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Eindscherm</title>
+<script src="lib/track.js"></script>
+<style>
+  body { margin: 0; background: #222; color: #ddd; }
+  #player { position: relative; width: 640px; height: 360px; margin: 40px; overflow: hidden; }
+  #wrap { position: absolute; left: 0; top: 0; width: 640px; height: 360px; }
+  video { width: 640px; height: 360px; display: block; background: #000; }
+  #grid { position: absolute; inset: 0; display: none; background: #333; }
+  #grid button { margin: 40px; width: 200px; height: 100px; }
+  #player.ended #grid { display: block; }
+  #player.ended #wrap { top: -700px; }
+</style>
+</head>
+<body>
+<div id="player"><div id="wrap"><video id="vid" src="/fixtures/media/short.mp4" autoplay muted preload="auto"></video></div><div id="grid"><button id="next">Volgende video</button></div></div>
+<script>
+  const v = document.getElementById("vid");
+  const player = document.getElementById("player");
+  window.__next = 0;
+  document.getElementById("next").addEventListener("click", () => window.__next++);
+  v.addEventListener("ended", () => player.classList.add("ended"));
+  v.addEventListener("play", () => player.classList.remove("ended"));
+</script>
+</body>
+</html>
